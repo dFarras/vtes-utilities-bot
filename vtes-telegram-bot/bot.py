@@ -3,25 +3,37 @@ import os
 from uuid import uuid4
 from telegram import InlineQueryResultPhoto, InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import Updater, InlineQueryHandler
+import requests
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def get_cards(query):
+    rs = requests.get("https://vtes.dirtydevelopers.org/api/search", params={'name': query})
+    if rs.status_code != 200:
+        raise Exception(f"[${rs.status_code}]$ {rs.text}")
+
+    return rs.json()
+
+
+def build_query_result(card):
+    return InlineQueryResultPhoto(id=uuid4(),
+                                  title=card['name'],
+                                  thumb_url=card['image'],
+                                  photo_url=card['image'])
+
+
 def handle_query(update, context):
     query = update.inline_query.query
 
-    results = [
-        InlineQueryResultPhoto(id=uuid4(),
-                               title="Art's Traumatic Essence",
-                               thumb_url="https://vtes.dirtydevelopers.org/img/100100.jpg",
-                               photo_url="https://vtes.dirtydevelopers.org/img/100100.jpg"),
-        InlineQueryResultPhoto(id=uuid4(),
-                               title="Ankla Hotep",
-                               thumb_url="https://vtes.dirtydevelopers.org/img/200100.jpg",
-                               photo_url="https://vtes.dirtydevelopers.org/img/200100.jpg"),
-    ]
+    if not query or len(query) < 3:
+        return
+
+    cards = get_cards(query)
+
+    results = [build_query_result(c) for c in cards[:14]]
 
     return update.inline_query.answer(results)
 
@@ -43,4 +55,3 @@ if __name__ == '__main__':
 
     updater.start_polling()
     updater.idle()
-
