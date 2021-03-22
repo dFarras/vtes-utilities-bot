@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_cards(query):
-    rs = requests.get("https://vtes.dirtydevelopers.org/api/search", params={'name': query})
+    rs = requests.get("https://api.bloodlibrary.info/api/search", params={'name': query})
     if rs.status_code != 200:
         raise Exception(f"[${rs.status_code}]$ {rs.text}")
 
