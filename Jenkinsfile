@@ -16,7 +16,7 @@ node {
         }catch(Exception e){
             echo e.getMessage()
         }
-        withCredentials([string(credentialsId: 'vtes-telegram-token', variable: 'token')]) {
+        withCredentials([string(credentialsId: 'vtes-telegram-bot-token', variable: 'token')]) {
                     def runArgs = '\
 -e "TELEGRAM_TOKEN=$token" \
 --restart unless-stopped \
