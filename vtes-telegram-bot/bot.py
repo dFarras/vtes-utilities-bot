@@ -4,6 +4,7 @@ from uuid import uuid4
 from telegram import InlineQueryResultPhoto, InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import Updater, InlineQueryHandler
 import requests
+from time import time
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -19,10 +20,11 @@ def get_cards(query):
 
 
 def build_query_result(card):
+    cache_tricker = f"?t={str(int(time()))}"
     return InlineQueryResultPhoto(id=uuid4(),
                                   title=card['name'],
-                                  thumb_url=card['image'],
-                                  photo_url=card['image'])
+                                  thumb_url=card['image'] + cache_tricker,
+                                  photo_url=card['image'] + cache_tricker)
 
 
 def handle_query(update, context):
@@ -35,7 +37,7 @@ def handle_query(update, context):
 
     results = [build_query_result(c) for c in cards[:14]]
 
-    return update.inline_query.answer(results)
+    return update.inline_query.answer(results, cache_time=1)
 
 
 def handle_error(update, context):
