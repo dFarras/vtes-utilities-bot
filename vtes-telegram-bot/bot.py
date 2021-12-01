@@ -1,10 +1,9 @@
 import logging
 import os
 from uuid import uuid4
-from telegram import InlineQueryResultPhoto, InlineQueryResultArticle, InputTextMessageContent
+from telegram import InlineQueryResultPhoto
 from telegram.ext import Updater, InlineQueryHandler
 import requests
-from time import time
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -20,11 +19,10 @@ def get_cards(query):
 
 
 def build_query_result(card):
-    cache_tricker = f"?t={str(int(time()))}"
     return InlineQueryResultPhoto(id=uuid4(),
                                   title=card['name'],
-                                  thumb_url=card['image'] + cache_tricker,
-                                  photo_url=card['image'] + cache_tricker)
+                                  thumb_url=card['image'],
+                                  photo_url=card['image'])
 
 
 def handle_query(update, context):
