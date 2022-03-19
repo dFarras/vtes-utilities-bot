@@ -20,7 +20,7 @@ def get_cards(query):
 
 def build_query_result(card):
     available_sets = list(filter(lambda s: s['image'], card['publish_sets']))
-    available_sets.sort(key=lambda s: s['set_id'])
+    available_sets.sort(key=lambda s: s['set_id'], reverse=True)
     return InlineQueryResultPhoto(id=uuid4(),
                                   title=card['name'],
                                   thumb_url=available_sets[0]['image'],
