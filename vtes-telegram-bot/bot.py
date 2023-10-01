@@ -1,59 +1,73 @@
+import io
 import logging
-import os
-from uuid import uuid4
-from telegram import InlineQueryResultPhoto
-from telegram.ext import Updater, InlineQueryHandler
+from tkinter import Image
+
+from telegram import Update, InlineQueryResultPhoto
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 import requests
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-logger = logging.getLogger(__name__)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
 
-def get_cards(query):
-    rs = requests.get("https://api.bloodlibrary.info/api/search", params={'name': query})
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Hola! Soy VTES ALLY, tu guía en el sombrío mundo de los vampiros"
+    )
+
+
+async def vtes(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="*¿Qué es VTES?*\n"
+             "  \- Es un juego de cartas ambientado en el mundo de tinieblas de Vampiro la Mascarada\n"
+             "  \- Sin embargo juego *no es un TCG*, y *no existen los sobres* ni la obligación de comprar cartas \(se acpetan proxies\)\n"
+             "  \- En los torneos es el organizador quien permite o no los proxies, la inmensa mayoría *si los permiten*\n\n"
+             "[Nociones básicas](https://www.youtube.com/watch?v=velKoYv3LXM)",
+        parse_mode='MarkdownV2',
+        disable_web_page_preview=True
+    )
+
+
+async def links(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="[Reglas](https://www.blackchantry.com/utilities/rulebook/)\n"
+             "[Generador de mazos y libreria de mazos y cartas](https://vtesdecks.com/)\n"
+             "[Generador de proxies](https://bloodlibrary.info/)\n",
+        parse_mode='MarkdownV2',
+        disable_web_page_preview=True
+    )
+
+
+async def get_card(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    card_name = ""
+    for arg in context.args:
+        if len(card_name) > 0:
+            card_name += " "
+        card_name += arg
+    rs = requests.get("https://api.bloodlibrary.info/api/search", params={'name': card_name})
     if rs.status_code != 200:
         raise Exception(f"[${rs.status_code}]$ {rs.text}")
-
-    return rs.json()
-
-
-def build_query_result(card):
-    available_sets = list(filter(lambda s: s['image'], card['publish_sets']))
-    available_sets.sort(key=lambda s: s['set_id'], reverse=True)
-    return InlineQueryResultPhoto(id=uuid4(),
-                                  title=card['name'],
-                                  thumb_url=available_sets[0]['image'],
-                                  photo_url=available_sets[0]['image'])
-
-
-def handle_query(update, context):
-    query = update.inline_query.query
-
-    if not query or len(query) < 3:
-        return
-
-    cards = get_cards(query)
-
-    results = [build_query_result(c) for c in cards[:14]]
-
-    return update.inline_query.answer(results, cache_time=1)
-
-
-def handle_error(update, context):
-    logger.warning('Update "%s" caused error "%s"', update, context.error)
-
+    cards = rs.json()
+    for c in cards[:14]:
+        available_sets = list(filter(lambda s: s['image'], c['publish_sets']))
+        available_sets.sort(key=lambda s: s['set_id'], reverse=True)
+        image = requests.get(available_sets[0]['image'])
+        await context.bot.send_photo(
+            chat_id=update.effective_chat.id,
+            photo=image.content
+        )
 
 if __name__ == '__main__':
-    bot_token = os.getenv("TELEGRAM_TOKEN", None)
-    if not bot_token:
-        raise Exception("Invalid Telegram bo token.")
+    application = ApplicationBuilder().token('6520029161:AAEv6MmrWZrX2c4yqUIFqhIZLryseAtqPkM').build()
 
-    updater = Updater(bot_token, use_context=True)
+    application.add_handler(CommandHandler('start', start))
+    application.add_handler(CommandHandler('vtes', vtes))
+    application.add_handler(CommandHandler('enlaces', links))
+    application.add_handler(CommandHandler('consultar_carta', get_card, has_args=True))
 
-    dispatcher = updater.dispatcher
-    dispatcher.add_handler(InlineQueryHandler(handle_query))
-    dispatcher.add_error_handler(handle_error)
-
-    updater.start_polling()
-    updater.idle()
+    application.run_polling()
