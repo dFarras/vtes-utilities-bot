@@ -1,5 +1,7 @@
 import logging
 import os
+import random
+
 import requests
 
 from telegram import Update
@@ -117,6 +119,30 @@ async def event(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def raffle_sites(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("hola")
+    names = context.args
+    print("names")
+    print(names)
+    players = len(names)
+    if players != 4 and players != 5:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Debes escribir entre 4 y 5 nombres ej \/sortear\_sitios nombre1 nombre2 nombre3 nombre4",
+            parse_mode='MarkdownV2'
+        )
+    message = ""
+    for i in range(players):
+        number = random.randint(0, len(names)-1)
+        message += str(i+1) + "\-" + names[number] + "\n"
+        names.remove(names[number])
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=message,
+        parse_mode='MarkdownV2'
+    )
+
+
 if __name__ == '__main__':
     load_dotenv()
     application = ApplicationBuilder().token(os.getenv("TELEGRAM_TOKEN")).build()
@@ -128,5 +154,6 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler('lugares', places, ))
     application.add_handler(CommandHandler('contacto', contact, ))
     application.add_handler(CommandHandler('evento_destacado', event, ))
+    application.add_handler(CommandHandler('sortear_sitios', raffle_sites, has_args=True))
 
     application.run_polling()
